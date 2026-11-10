@@ -63,13 +63,33 @@ int main() {
         }
         
         if (pid == 0) {
-            close(conector); // El hijo cierra el socket general porque solo le importa SU cliente
+            close(conector); // Al hijo solo le interesa su cliente, no el socket principal
             
-            printf("Proceso hijo (PID: %d) creado. Preparando transferencia...\n", getpid());
+            printf("Hijo %d atendiendo peticion...\n", getpid());
             
+            // Abrimos el archivo en modo lectura
+            FILE *archivo = fopen("Google.html", "r");
+            if (archivo == NULL) {
+                perror("Error: No se encuentra Google.html en la carpeta");
+                close(nuevo_socket);
+                exit(EXIT_FAILURE);
+            }
             
-            close(nuevo_socket); // Cerramos la conexión con el cliente
-            exit(EXIT_SUCCESS);  // Matamos al hijo para que no se quede zombie
+            char buffer[1024];
+            size_t bytes_leidos;
+            
+            // Leemos y enviamos en bloques de 1KB para no saturar la memoria
+            while ((bytes_leidos = fread(buffer, 1, sizeof(buffer), archivo)) > 0) {
+                if (write(nuevo_socket, buffer, bytes_leidos) < 0) {
+                    perror("Error enviando el archivo");
+                    break;
+                }
+            }
+            
+            printf("Archivo transferido. Cerrando conexion.\n");
+            fclose(archivo);
+            close(nuevo_socket);
+            exit(EXIT_SUCCESS); 
         } else {
             close(nuevo_socket); // El padre cierra el socket del cliente y vuelve a escuchar
         }
