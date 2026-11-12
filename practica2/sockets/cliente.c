@@ -43,7 +43,31 @@ int main() {
 
     printf("¡Conectado con exito al servidor!\n");
 
-    // Aquí iremos leyendo el archivo que nos mande el servidor
+    // Creamos un archivo nuevo para guardar lo que nos llegue
+    FILE *archivo = fopen("Google_recibido.html", "w");
+    if (archivo == NULL) {
+        perror("Error al crear el archivo de destino");
+        close(socket_cliente);
+        exit(EXIT_FAILURE);
+    }
+
+    char buffer[1024];
+    ssize_t bytes_recibidos;
+
+    printf("Recibiendo datos del servidor...\n");
+
+    // Leemos del enchufe en bloques de 1KB y los escribimos en nuestro archivo
+    while ((bytes_recibidos = read(socket_cliente, buffer, sizeof(buffer))) > 0) {
+        fwrite(buffer, 1, bytes_recibidos, archivo);
+    }
+
+    if (bytes_recibidos < 0) {
+        perror("Error al leer los datos del socket");
+    } else {
+        printf("Archivo descargado correctamente como 'Google_recibido.html'\n");
+    }
+
+    fclose(archivo);
     
     close(socket_cliente);
     return 0;
